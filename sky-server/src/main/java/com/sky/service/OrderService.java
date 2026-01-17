@@ -6,6 +6,7 @@ import com.sky.dto.OrdersSubmitDTO;
 import com.sky.result.PageResult;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 
 /**
  * @Author {liukun}
@@ -43,4 +44,30 @@ public interface OrderService {
      * @return
      */
     PageResult pageQuery4User(int page, int pageSize, Integer status);
+
+    /**
+     * 根据id查询订单详情
+     * @param id
+     * @return
+     */
+    OrderVO getOrderDetailById(Long id);
+
+    /**
+     * 取消订单
+     * @param id
+     */
+    void cancelOrderById(Long id) throws Exception;
+
+    /**
+     * 再来一单
+     * @param id
+     */
+    void repetitionOrderById(Long id);
+
+    /**
+     * 订单搜索
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
 }
