@@ -17,6 +17,7 @@ import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 import lombok.extern.slf4j.Slf4j;
@@ -353,6 +354,36 @@ public class OrderServiceImpl implements OrderService {
 //        }
 //        return new PageResult(ordersPage.getTotal(), list);
     }
+
+    @Override
+    public OrderStatisticsVO statistics() {
+        // 订单统计 查询订单表中各个状态的数据的量 并返回至前端
+        // 查询数据
+        List<Integer> statusList = new ArrayList<>();
+        statusList.add(orderMapper.getByStatus(Orders.TO_BE_CONFIRMED));// 待接单数量
+        statusList.add(orderMapper.getByStatus(Orders.CONFIRMED));// 待派送数量
+        statusList.add(orderMapper.getByStatus(Orders.DELIVERY_IN_PROGRESS));// 派送中数量
+        // 封装到 OrderStatisticsVO 中
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        BeanUtils.copyProperties(statusList, orderStatisticsVO);
+        // 返回数据
+        return orderStatisticsVO;
+    }
+
+    @Override
+    public OrderVO details(Long id) {
+        // 根据id查询订单详情
+        Orders order = orderMapper.getById(id);
+        // 获取订单菜品信息
+        List<OrderDetail> orderDetailList = orderDetailMapper.getByOrderId(order.getId());
+        // 封装至 OrderVO 并返回数据
+        OrderVO orderVO = new OrderVO();
+        // 将共同字段复制到OrderVO中
+        BeanUtils.copyProperties(order, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+        return orderVO;
+    }
+
     private List<OrderVO> getOrderVOList(Page<Orders> page) {
         // 需要返回订单菜品信息，自定义OrderVO响应结果
         List<OrderVO> orderVOList = new ArrayList<>();
