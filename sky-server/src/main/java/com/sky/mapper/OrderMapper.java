@@ -1,6 +1,9 @@
 package com.sky.mapper;
 
+import com.github.pagehelper.Page;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
+import com.sky.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -43,4 +46,11 @@ public interface OrderMapper {
             "where number = #{orderNumber}")
     void updateStatus(Integer orderStatus, Integer orderPaidStatus, LocalDateTime check_out_time, String orderNumber);
 
+
+    /**
+     * 分页条件查询并按下单时间排序
+     * @param ordersPageQueryDTO
+     * @return
+     */
+    Page<Orders> pageQuery(OrdersPageQueryDTO ordersPageQueryDTO);
 }
