@@ -6,10 +6,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersConfirmDTO;
-import com.sky.dto.OrdersPageQueryDTO;
-import com.sky.dto.OrdersPaymentDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
@@ -249,7 +246,11 @@ public class OrderServiceImpl implements OrderService {
 
         return orderVO;
     }
-
+    /**
+     * 取消订单
+     *
+     * @param id
+     */
     @Override
     public void cancelOrderById(Long id) throws Exception{
         //根据id查询订单
@@ -400,7 +401,7 @@ public class OrderServiceImpl implements OrderService {
      * @param ordersConfirmDTO
      */
     @Override
-    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO){
 //        // 根据 id 修改订单状态为已接单
 //        Orders  orders = new Orders();
 //        orders.setId(ordersConfirmDTO.getId());
@@ -409,6 +410,80 @@ public class OrderServiceImpl implements OrderService {
         Orders orders = Orders.builder()
                 .id(ordersConfirmDTO.getId())
                 .status(Orders.CONFIRMED)
+                .build();
+        // 更新数据库
+        orderMapper.update(orders);
+    }
+    /**
+     * 拒单
+     *
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO)  throws Exception{
+        // 判断当前订单状态是否为待接单状态，只有待接单状态下才能拒单并取消订单
+        Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
+        // 校验订单是否存在
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        // 校验订单状态
+        if (!ordersDB.getStatus().equals(Orders.TO_BE_CONFIRMED)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        // 如果用户已付款，则需要进行退款操作
+        if (ordersDB.getPayStatus().equals(Orders.PAID)) {
+//              orders.setPayStatus(Orders.REFUND);
+            //调用微信支付退款接口
+//            WeChatPayUtil.refund(
+//                    ordersDB.getNumber(), //商户订单号
+//                    ordersDB.getNumber(), //商户退款单号
+//                    new BigDecimal(0.01),//退款金额，单位 元
+//                    new BigDecimal(0.01));//原订单金额
+        }
+        Orders orders = Orders.builder()
+                .id(ordersRejectionDTO.getId()) // 设置订单id
+                .rejectionReason(ordersRejectionDTO.getRejectionReason()) // 设置拒单原因
+                .cancelTime(LocalDateTime.now()) // 设置取消时间为当前时间
+                .payStatus(ordersDB.getPayStatus().equals(Orders.PAID) ? Orders.REFUND : ordersDB.getPayStatus()) // 如果已支付则改为退款状态，否则保持原支付状态
+                .status(Orders.CANCELLED) // 设置订单状态为已取消
+                .build();
+
+        // 更新数据库
+        orderMapper.update(orders);
+    }
+
+    /**
+     * 商家取消订单
+     *
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void cancel(OrdersCancelDTO ordersCancelDTO) {
+        // 判断当前订单是否存在
+        // 校验订单
+        Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
+        if(ordersDB == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+        // 已完成付款的订单需要进行退款
+        if (ordersDB.getPayStatus().equals(Orders.PAID)) {
+            //调用微信支付退款接口
+//            WeChatPayUtil.refund(
+//                    ordersDB.getNumber(), //商户订单号
+//                    ordersDB.getNumber(), //商户退款单号
+//                    new BigDecimal(0.01),//退款金额，单位 元
+//                    new BigDecimal(0.01));//原订单金额
+        }
+
+        // 修改订单状态为已取消
+        Orders orders = Orders.builder()
+                .id(ordersCancelDTO.getId())
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .payStatus(ordersDB.getPayStatus().equals(Orders.PAID) ? Orders.REFUND : ordersDB.getPayStatus()) // 如果已支付则改为退款状态，否则保持原支付状态
+                .status(Orders.CANCELLED)
                 .build();
         // 更新数据库
         orderMapper.update(orders);
