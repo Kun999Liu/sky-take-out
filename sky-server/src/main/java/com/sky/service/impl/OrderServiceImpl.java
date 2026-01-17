@@ -6,6 +6,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.xiaoymin.knife4j.core.util.CollectionUtils;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersConfirmDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
@@ -355,6 +356,11 @@ public class OrderServiceImpl implements OrderService {
 //        return new PageResult(ordersPage.getTotal(), list);
     }
 
+    /**
+     * 各个状态订单统计
+     *
+     * @return
+     */
     @Override
     public OrderStatisticsVO statistics() {
         // 订单统计 查询订单表中各个状态的数据的量 并返回至前端
@@ -370,6 +376,11 @@ public class OrderServiceImpl implements OrderService {
         return orderStatisticsVO;
     }
 
+    /**
+     * 查询订单详情
+     *
+     * @return id
+     */
     @Override
     public OrderVO details(Long id) {
         // 根据id查询订单详情
@@ -382,6 +393,25 @@ public class OrderServiceImpl implements OrderService {
         BeanUtils.copyProperties(order, orderVO);
         orderVO.setOrderDetailList(orderDetailList);
         return orderVO;
+    }
+    /**
+     * 接单
+     *
+     * @param ordersConfirmDTO
+     */
+    @Override
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+//        // 根据 id 修改订单状态为已接单
+//        Orders  orders = new Orders();
+//        orders.setId(ordersConfirmDTO.getId());
+//        // 设置订单状态为已接单
+//        orders.setStatus(Orders.CONFIRMED);
+        Orders orders = Orders.builder()
+                .id(ordersConfirmDTO.getId())
+                .status(Orders.CONFIRMED)
+                .build();
+        // 更新数据库
+        orderMapper.update(orders);
     }
 
     private List<OrderVO> getOrderVOList(Page<Orders> page) {
