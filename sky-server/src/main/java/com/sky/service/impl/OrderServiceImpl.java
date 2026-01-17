@@ -488,6 +488,26 @@ public class OrderServiceImpl implements OrderService {
         // 更新数据库
         orderMapper.update(orders);
     }
+    /**
+     * 商家派送订单
+     *
+     * @param id
+     */
+    @Override
+    public void delivery(Long id) {
+        // 根据id 校验订单是否存在 且状态时待派送状态
+        Orders ordersDB = orderMapper.getById(id);
+        if(ordersDB == null || !ordersDB.getStatus().equals(Orders.CONFIRMED)){
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+        // 修改订单状态为派送中
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+        //更新数据库
+        orderMapper.update(orders);
+    }
 
     private List<OrderVO> getOrderVOList(Page<Orders> page) {
         // 需要返回订单菜品信息，自定义OrderVO响应结果
