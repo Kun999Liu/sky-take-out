@@ -62,6 +62,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private WebSocketServer webSocketServer;
+
     /**
      * 用户下单
      *
@@ -73,10 +74,10 @@ public class OrderServiceImpl implements OrderService {
     public OrderSubmitVO submitOrder(OrdersSubmitDTO ordersSubmitDTO) {
         // 处理各种业务异常（地址簿为空、购物车数据为空）
         AddressBook addressbook = addressBookMapper.getById(ordersSubmitDTO.getAddressBookId());
-       if (addressbook == null) {
-           // 抛出业务异常
-           throw new AddressBookBusinessException(MessageConstant.ADDRESS_BOOK_IS_NULL);
-       }
+        if (addressbook == null) {
+            // 抛出业务异常
+            throw new AddressBookBusinessException(MessageConstant.ADDRESS_BOOK_IS_NULL);
+        }
         // 判断购物车是否为空
         ShoppingCart shoppingCart = new ShoppingCart();
         Long currentId = BaseContext.getCurrentId();
@@ -128,13 +129,15 @@ public class OrderServiceImpl implements OrderService {
 
         return orderSubmitVO;
     }
+
     /**
      * 订单支付
+     *
      * @param ordersPaymentDTO
      * @return
      */
     @Override
-    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception{
+    public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         // 当前登录用户id
 //        Long userId = BaseContext.getCurrentId();
 //        User user = userMapper.getById(userId);
@@ -170,10 +173,10 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.updateStatus(OrderStatus, OrderPaidStatus, check_out_time, orderNumber);
 
         // 通过 websocket 向浏览器客户端推送消息 type orderId content
-        Map map =new HashMap();
-        map.put("type",1); // 1代表来单提醒 2表示客户催单
-        map.put("orderId",orderNumber);
-        map.put("content","订单号：" + orderNumber);
+        Map map = new HashMap();
+        map.put("type", 1); // 1代表来单提醒 2表示客户催单
+        map.put("orderId", orderNumber);
+        map.put("content", "订单号：" + orderNumber);
 
 //        JSON.toJSONString(map);
         webSocketServer.sendToAllClient(JSON.toJSONString(map));
@@ -264,21 +267,22 @@ public class OrderServiceImpl implements OrderService {
 
         return orderVO;
     }
+
     /**
      * 取消订单
      *
      * @param id
      */
     @Override
-    public void cancelOrderById(Long id) throws Exception{
+    public void cancelOrderById(Long id) throws Exception {
         //根据id查询订单
         Orders ordersDB = orderMapper.getById(id);
         // 校验订单是否存在
-        if(ordersDB == null){
+        if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
         // 判断订单状态是否可以取消（未支付状态下可以取消）
-        if(ordersDB.getStatus() > 2){
+        if (ordersDB.getStatus() > 2) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
@@ -333,6 +337,7 @@ public class OrderServiceImpl implements OrderService {
         // 执行数据库操作，将数据批量插入购物车表
         shoppingCartMapper.insertBatch(shoppingCartList);
     }
+
     /**
      * 订单搜索
      *
@@ -413,13 +418,14 @@ public class OrderServiceImpl implements OrderService {
         orderVO.setOrderDetailList(orderDetailList);
         return orderVO;
     }
+
     /**
      * 接单
      *
      * @param ordersConfirmDTO
      */
     @Override
-    public void confirm(OrdersConfirmDTO ordersConfirmDTO){
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
 //        // 根据 id 修改订单状态为已接单
 //        Orders  orders = new Orders();
 //        orders.setId(ordersConfirmDTO.getId());
@@ -432,13 +438,14 @@ public class OrderServiceImpl implements OrderService {
         // 更新数据库
         orderMapper.update(orders);
     }
+
     /**
      * 拒单
      *
      * @param ordersRejectionDTO
      */
     @Override
-    public void rejection(OrdersRejectionDTO ordersRejectionDTO)  throws Exception{
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception {
         // 判断当前订单状态是否为待接单状态，只有待接单状态下才能拒单并取消订单
         Orders ordersDB = orderMapper.getById(ordersRejectionDTO.getId());
         // 校验订单是否存在
@@ -482,7 +489,7 @@ public class OrderServiceImpl implements OrderService {
         // 判断当前订单是否存在
         // 校验订单
         Orders ordersDB = orderMapper.getById(ordersCancelDTO.getId());
-        if(ordersDB == null){
+        if (ordersDB == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
         // 已完成付款的订单需要进行退款
@@ -506,6 +513,7 @@ public class OrderServiceImpl implements OrderService {
         // 更新数据库
         orderMapper.update(orders);
     }
+
     /**
      * 商家派送订单
      *
@@ -515,7 +523,7 @@ public class OrderServiceImpl implements OrderService {
     public void delivery(Long id) {
         // 根据id 校验订单是否存在 且状态时待派送状态
         Orders ordersDB = orderMapper.getById(id);
-        if(ordersDB == null || !ordersDB.getStatus().equals(Orders.CONFIRMED)){
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.CONFIRMED)) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
         // 修改订单状态为派送中
@@ -529,23 +537,46 @@ public class OrderServiceImpl implements OrderService {
 
     /**
      * 商家完成订单
+     *
      * @param id
      */
     @Override
     public void complete(Long id) {
         // 根据id 校验订单是否存在 且状态是派送状态
         Orders ordersDB = orderMapper.getById(id);
-        if(ordersDB == null || !ordersDB.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)){
+        if (ordersDB == null || !ordersDB.getStatus().equals(Orders.DELIVERY_IN_PROGRESS)) {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
         // 修改订单状态
-        Orders  orders = Orders.builder()
+        Orders orders = Orders.builder()
                 .id(id)
                 .status(Orders.COMPLETED)
                 .deliveryTime(LocalDateTime.now())
                 .build();
         //更新数据库
         orderMapper.update(orders);
+    }
+
+    /**
+     * 客户催单
+     *
+     * @param id
+     */
+    @Override
+    public void reminder(Long id) {
+        // 根据id 校验订单是否存在 且状态不是已完成或已取消状态
+        Orders ordersDB = orderMapper.getById(id);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        // 通过 websocket 向浏览器客户端推送消息 type orderId content
+        Map map = new HashMap();
+        map.put("type", 2); // 1代表来单提醒 2表示客户催单
+        map.put("orderId", id);
+        map.put("content", "订单号：" + ordersDB.getNumber() + "的订单已被催单");
+
+        webSocketServer.sendToAllClient(JSON.toJSONString(map));
     }
 
     private List<OrderVO> getOrderVOList(Page<Orders> page) {
