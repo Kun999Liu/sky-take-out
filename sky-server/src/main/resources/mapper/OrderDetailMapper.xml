@@ -11,4 +11,15 @@
 
 
     </insert>
+    <select id="countTOP10ByMap">
+        select name, sum(number) as totalNumber
+        from order_detail
+        where order_id in
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">
+            #{orderId}
+        </foreach>
+        group by name
+        order by totalNumber desc
+        limit 10
+    </select>
 </mapper>
